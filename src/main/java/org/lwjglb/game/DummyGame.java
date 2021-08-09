@@ -9,6 +9,7 @@ import org.lwjglb.engine.MouseInput;
 import org.lwjglb.engine.Window;
 import org.lwjglb.engine.graph.Camera;
 import org.lwjglb.engine.graph.Mesh;
+import org.lwjglb.engine.graph.Polygon;
 import org.lwjglb.engine.graph.Texture;
 
 public class DummyGame implements IGameLogic {
@@ -120,6 +121,9 @@ public class DummyGame implements IGameLogic {
             4, 6, 7, 5, 4, 7,};
         Texture texture = new Texture("textures/grassblock.png");
         Mesh mesh = new Mesh(positions, textCoords, indices, texture);
+        Vector3f center = new Vector3f(0.0f, 0.0f, 0.0f);
+        Vector3f normal = new Vector3f(0, 1f, 1f);
+        Polygon polygon = new Polygon(center, 0.25f, normal,5,  texture);
         GameItem gameItem1 = new GameItem(mesh);
         gameItem1.setScale(0.5f);
         gameItem1.setPosition(0, 0, -2);
@@ -132,7 +136,11 @@ public class DummyGame implements IGameLogic {
         GameItem gameItem4 = new GameItem(mesh);
         gameItem4.setScale(0.5f);
         gameItem4.setPosition(0.5f, 0, -2.5f);
-        gameItems = new GameItem[]{gameItem1, gameItem2, gameItem3, gameItem4};
+        GameItem gameItem5 = new GameItem(polygon);
+        gameItem5.setScale(0.5f);
+        gameItem5.setPosition(0, 0, -2);
+        gameItems = new GameItem[]{gameItem5};
+//        gameItems = new GameItem[]{gameItem1, gameItem2, gameItem3, gameItem4};
     }
 
     @Override

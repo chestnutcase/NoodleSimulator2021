@@ -1,7 +1,9 @@
 package org.lwjglb.game;
 
 import org.joml.Matrix4f;
+
 import static org.lwjgl.opengl.GL11.*;
+
 import org.lwjglb.engine.GameItem;
 import org.lwjglb.engine.Utils;
 import org.lwjglb.engine.Window;
@@ -34,7 +36,7 @@ public class Renderer {
         shaderProgram.createVertexShader(Utils.loadResource("/shaders/vertex.vs"));
         shaderProgram.createFragmentShader(Utils.loadResource("/shaders/fragment.fs"));
         shaderProgram.link();
-        
+
         // Create uniforms for modelView and projection matrices and texture
         shaderProgram.createUniform("projectionMatrix");
         shaderProgram.createUniform("modelViewMatrix");
@@ -47,21 +49,21 @@ public class Renderer {
 
     public void render(Window window, Camera camera, GameItem[] gameItems) {
         clear();
-        
+
         if (window.isResized()) {
             glViewport(0, 0, window.getWidth(), window.getHeight());
             window.setResized(false);
         }
 
         shaderProgram.bind();
-        
+
         // Update projection Matrix
         Matrix4f projectionMatrix = transformation.getProjectionMatrix(FOV, window.getWidth(), window.getHeight(), Z_NEAR, Z_FAR);
         shaderProgram.setUniform("projectionMatrix", projectionMatrix);
 
         // Update view Matrix
         Matrix4f viewMatrix = transformation.getViewMatrix(camera);
-        
+
         shaderProgram.setUniform("texture_sampler", 0);
         // Render each gameItem
         for (GameItem gameItem : gameItems) {
@@ -69,7 +71,7 @@ public class Renderer {
             Matrix4f modelViewMatrix = transformation.getModelViewMatrix(gameItem, viewMatrix);
             shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
             // Render the mes for this game item
-             gameItem.getMesh().render();
+            gameItem.getMesh().render();
         }
 
         shaderProgram.unbind();

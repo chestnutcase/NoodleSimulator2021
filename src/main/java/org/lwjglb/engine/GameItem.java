@@ -2,12 +2,13 @@ package org.lwjglb.engine;
 
 import org.joml.Vector3f;
 import org.lwjglb.engine.graph.Mesh;
+import org.lwjglb.engine.graph.Renderable;
 
 import static org.lwjgl.opengl.GL11.*;
 
 public class GameItem {
 
-    private final Mesh mesh;
+    private final Renderable mesh;
     
     private final Vector3f position;
     
@@ -15,7 +16,7 @@ public class GameItem {
 
     private final Vector3f rotation;
 
-    public GameItem(Mesh mesh) {
+    public GameItem(Renderable mesh) {
         this.mesh = mesh;
         position = new Vector3f();
         scale = 1;
@@ -50,7 +51,7 @@ public class GameItem {
         this.rotation.z = z;
     }
     
-    public Mesh getMesh() {
+    public Renderable getMesh() {
         return mesh;
     }
 }
