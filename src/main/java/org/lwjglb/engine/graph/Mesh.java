@@ -31,20 +31,34 @@ import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class Mesh implements Renderable {
 
-    private final int vaoId;
-
-    private final List<Integer> vboIdList;
-
-    private final int vertexCount;
-
+    private int vaoId;
+    private List<Integer> vboIdList;
+    private int vertexCount;
+    private final float[] positions;
+    private final float[] textCoords;
+    private final int[] indices;
     private final Texture texture;
 
     public Mesh(float[] positions, float[] textCoords, int[] indices, Texture texture) {
+        this.positions = positions;
+        this.textCoords = textCoords;
+        this.indices = indices;
+        this.texture = texture;
+    }
+
+    public int getVaoId() {
+        return vaoId;
+    }
+
+    public int getVertexCount() {
+        return vertexCount;
+    }
+
+    public void allocate() {
         FloatBuffer posBuffer = null;
         FloatBuffer textCoordsBuffer = null;
         IntBuffer indicesBuffer = null;
         try {
-            this.texture = texture;
             vertexCount = indices.length;
             vboIdList = new ArrayList<>();
 
@@ -92,14 +106,6 @@ public class Mesh implements Renderable {
                 MemoryUtil.memFree(indicesBuffer);
             }
         }
-    }
-
-    public int getVaoId() {
-        return vaoId;
-    }
-
-    public int getVertexCount() {
-        return vertexCount;
     }
 
     public void render() {

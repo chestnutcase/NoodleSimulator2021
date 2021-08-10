@@ -2,7 +2,7 @@ package org.lwjglb.engine.graph;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.lwjglb.engine.GameItem;
+import org.lwjglb.engine.IGameItem;
 
 public class Transformation {
 
@@ -35,7 +35,7 @@ public class Transformation {
         return viewMatrix;
     }
 
-    public Matrix4f getModelViewMatrix(GameItem gameItem, Matrix4f viewMatrix) {
+    public Matrix4f getModelViewMatrix(IGameItem gameItem, Matrix4f viewMatrix) {
         Vector3f rotation = gameItem.getRotation();
         modelViewMatrix.identity().translate(gameItem.getPosition()).
                 rotateX((float)Math.toRadians(-rotation.x)).

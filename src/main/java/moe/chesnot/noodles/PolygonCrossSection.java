@@ -1,54 +1,50 @@
-package org.lwjglb.engine.graph;
+package moe.chesnot.noodles;
 
 import org.joml.Vector3f;
-
-import static java.lang.Math.PI;
-import static org.lwjgl.opengl.GL11.*;
-
 import org.lwjgl.system.MemoryUtil;
+import org.lwjglb.engine.graph.Renderable;
+import org.lwjglb.engine.graph.Texture;
 
+import java.lang.reflect.Array;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.lwjgl.opengl.GL11.GL_FLOAT;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
-import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
-import static org.lwjgl.opengl.GL11.glBindTexture;
-import static org.lwjgl.opengl.GL11.glDrawElements;
+import static java.lang.Math.PI;
+import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13.glActiveTexture;
-import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL15.glBindBuffer;
-import static org.lwjgl.opengl.GL15.glBufferData;
-import static org.lwjgl.opengl.GL15.glDeleteBuffers;
-import static org.lwjgl.opengl.GL15.glGenBuffers;
-import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
-import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
-import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
-import static org.lwjgl.opengl.GL30.glDeleteVertexArrays;
-import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
 
-public class Polygon implements Renderable {
-    private final float[] positions;
+public class PolygonCrossSection implements NoodleCrossSection {
+    private float[] positions;
+    private int[] indices;
+    private float[] textCoords;
+    private int vaoId;
 
-    private final int vaoId;
+    private List<Integer> vboIdList;
 
-    private final List<Integer> vboIdList;
+    private int vertexCount;
 
-    private final int vertexCount;
+    private Texture texture;
 
-    private final Texture texture;
+    private final Vector3f normal;
+    private final Vector3f center;
+    private final float radius;
+    private final int sides;
+    private final ArrayList<Vector3f> points;
 
-    public Polygon(Vector3f center, float radius, Vector3f normal, int sides, Texture texture) {
+    public PolygonCrossSection(Vector3f center, float radius, Vector3f normal, int sides, Texture texture) {
+        this.normal = normal;
+        this.center = center;
+        this.radius = radius;
+        this.sides = sides;
+        this.points = new ArrayList<Vector3f>();
         // ax + by + cz = 0
         Vector3f radiusVector;
-        normal.orthogonalize(normal);
         if (normal.z != 0) {
             // set a and b = 1
             // c = (-x - y) / z
@@ -75,22 +71,33 @@ public class Polygon implements Renderable {
             positions[(i * 3)] = newPoint.x;
             positions[(i * 3) + 1] = newPoint.y;
             positions[(i * 3) + 2] = newPoint.z;
+            this.points.add(newPoint);
         }
         this.positions = positions;
-        int[] indices = new int[sides];
+        indices = new int[sides];
         for (int i = 0; i < sides; i++) {
             indices[i] = i;
         }
-        float[] textCoords = new float[sides * 2];
+        textCoords = new float[sides * 2];
         for (int i = 0; i < sides; i++) {
-            if (i % 2 == 0) {
-                textCoords[(i * 2)] = 0.0f;
-                textCoords[(i * 2) + 1] = 0.0f;
-            } else {
-                textCoords[(i * 2)] = 0.5f;
-                textCoords[(i * 2) + 1] = 0.5f;
-            }
+            float angle = (float) (2 * PI / sides * i);
+            textCoords[(i * 2)] = (float) ((0.5) + 0.5*Math.sin(angle));
+            textCoords[(i * 2) + 1] = (float) (0.5 + 0.5*Math.cos(angle));
         }
+        this.texture = texture;
+        allocate();
+    }
+
+    public int getVaoId() {
+        return vaoId;
+    }
+
+    public int getVertexCount() {
+        return vertexCount;
+    }
+
+    @Override
+    public void allocate() {
         FloatBuffer posBuffer = null;
         FloatBuffer textCoordsBuffer = null;
         IntBuffer indicesBuffer = null;
@@ -145,14 +152,6 @@ public class Polygon implements Renderable {
         }
     }
 
-    public int getVaoId() {
-        return vaoId;
-    }
-
-    public int getVertexCount() {
-        return vertexCount;
-    }
-
     @Override
     public void render() {
         // Activate firs texture bank
@@ -184,5 +183,29 @@ public class Polygon implements Renderable {
         // Delete the VAO
         glBindVertexArray(0);
         glDeleteVertexArrays(vaoId);
+    }
+
+    @Override
+    public Vector3f getNormal() {
+        return this.normal;
+    }
+
+    @Override
+    public Vector3f getCenter() {
+        return center;
+    }
+
+    @Override
+    public float getRadius() {
+        return radius;
+    }
+
+    @Override
+    public List<Vector3f> getPoints() {
+        ArrayList<Vector3f> points = new ArrayList<Vector3f>();
+        for (Vector3f p : this.points) {
+            points.add(new Vector3f(p));
+        }
+        return points;
     }
 }
