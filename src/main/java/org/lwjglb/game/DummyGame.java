@@ -32,14 +32,17 @@ public class DummyGame implements IGameLogic {
     public void init(Window window) throws Exception {
         renderer.init(window);
         Texture texture = new Texture("textures/pasta2.png");
-        NoodleCurveFactory<?> ncf = new StraightNoodleCurveFactory();
+//        NoodleCurveFactory<?> ncf = new BeizerNoodleCurveFactory(3);
+//        NoodleCurveFactory<?> ncf = new StraightNoodleCurveFactory();
+        NoodleCurveFactory<?> ncf = new QuadraticBeizerNoodleCurveFactory(0.2f);
         // Create the noodle
         Noodle noodle = new Noodle(ncf, texture, 6, 0.5f);
         Vector3f center = new Vector3f(0.0f, 0.0f, 0.5f);
         Vector3f normal = new Vector3f(0, 1f, 1f);
         PolygonCrossSection polygon = new PolygonCrossSection(center, 0.25f, normal,5,  texture);
-        IGameItem gm = new GameItem(polygon);
-        gameItems = new IGameItem[]{noodle, gm};
+        gameItems = new IGameItem[]{noodle};
+//        IGameItem gm = new GameItem(polygon);
+//        gameItems = new IGameItem[]{noodle, gm};
 //        // Create the Mesh
 //        float[] positions = new float[]{
 //            // V0
@@ -148,6 +151,8 @@ public class DummyGame implements IGameLogic {
 ////        gameItems = new GameItem[]{gameItem1, gameItem2, gameItem3, gameItem4};
     }
 
+    private boolean debounceS = false;
+
     @Override
     public void input(Window window, MouseInput mouseInput) {
         cameraInc.set(0, 0, 0);
@@ -165,6 +170,16 @@ public class DummyGame implements IGameLogic {
             cameraInc.y = -1;
         } else if (window.isKeyPressed(GLFW_KEY_SPACE)) {
             cameraInc.y = 1;
+        }
+        if (window.isKeyPressed(GLFW_KEY_L) && debounceS){
+            debounceS = false;
+            for(IGameItem gameItem : gameItems){
+                if(gameItem.getClass().equals(Noodle.class)){
+                    ((Noodle) gameItem).toggleSweptSurfaceVisible();
+                }
+            }
+        }else if(!window.isKeyPressed(GLFW_KEY_L)) {
+            debounceS = true;
         }
     }
 

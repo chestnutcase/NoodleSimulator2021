@@ -1,11 +1,10 @@
 package moe.chesnot.noodles;
 
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjglb.engine.graph.Renderable;
 import org.lwjglb.engine.graph.Texture;
 
-import java.lang.reflect.Array;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -31,13 +30,13 @@ public class PolygonCrossSection implements NoodleCrossSection {
 
     private Texture texture;
 
-    private final Vector3f normal;
-    private final Vector3f center;
+    private final Vector3fc normal;
+    private final Vector3fc center;
     private final float radius;
     private final int sides;
     private final ArrayList<Vector3f> points;
 
-    public PolygonCrossSection(Vector3f center, float radius, Vector3f normal, int sides, Texture texture) {
+    public PolygonCrossSection(Vector3fc center, float radius, Vector3fc normal, int sides, Texture texture) {
         this.normal = normal;
         this.center = center;
         this.radius = radius;
@@ -45,27 +44,27 @@ public class PolygonCrossSection implements NoodleCrossSection {
         this.points = new ArrayList<Vector3f>();
         // ax + by + cz = 0
         Vector3f radiusVector;
-        if (normal.z != 0) {
+        if (normal.z() != 0) {
             // set a and b = 1
             // c = (-x - y) / z
-            float c = (-normal.x - normal.y) / normal.z;
+            float c = (-normal.x() - normal.y()) / normal.z();
             radiusVector = new Vector3f(1, 1, c).normalize(radius);
-        } else if (normal.y != 0) {
+        } else if (normal.y() != 0) {
             // set a and c = 1
             // b = (-x -z) / y
-            float b = (-normal.x - normal.z) / normal.y;
+            float b = (-normal.x() - normal.z()) / normal.y();
             radiusVector = new Vector3f(1, b, 1).normalize(radius);
         } else {
             // set b and c = 1
             // a = (-y -z) / x
-            float a = (-normal.y - normal.z) / normal.x;
+            float a = (-normal.y() - normal.z()) / normal.x();
             radiusVector = new Vector3f(a, 1, 1).normalize(radius);
         }
         Vector3f currentRadiusVector = new Vector3f();
         float[] positions = new float[sides * 3];
         for (int i = 0; i < sides; i++) {
             float angle = (float) (2 * PI / sides * i);
-            radiusVector.rotateAxis(angle, normal.x, normal.y, normal.z, currentRadiusVector);
+            radiusVector.rotateAxis(angle, normal.x(), normal.y(), normal.z(), currentRadiusVector);
             Vector3f newPoint = new Vector3f();
             center.add(currentRadiusVector, newPoint);
             positions[(i * 3)] = newPoint.x;
@@ -186,12 +185,12 @@ public class PolygonCrossSection implements NoodleCrossSection {
     }
 
     @Override
-    public Vector3f getNormal() {
+    public Vector3fc getNormal() {
         return this.normal;
     }
 
     @Override
-    public Vector3f getCenter() {
+    public Vector3fc getCenter() {
         return center;
     }
 
@@ -201,8 +200,8 @@ public class PolygonCrossSection implements NoodleCrossSection {
     }
 
     @Override
-    public List<Vector3f> getPoints() {
-        ArrayList<Vector3f> points = new ArrayList<Vector3f>();
+    public List<Vector3fc> getPoints() {
+        ArrayList<Vector3fc> points = new ArrayList<>();
         for (Vector3f p : this.points) {
             points.add(new Vector3f(p));
         }

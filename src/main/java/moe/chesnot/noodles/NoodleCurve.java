@@ -1,12 +1,10 @@
 package moe.chesnot.noodles;
 
-import org.joml.Vector3f;
-
-import java.util.List;
+import org.joml.Vector3fc;
 
 public interface NoodleCurve {
 
-    Vector3f getPosition(float t);
+    Vector3fc getPosition(float t);
 
-    Vector3f getTangent(float t);
+    Vector3fc getTangent(float t);
 }

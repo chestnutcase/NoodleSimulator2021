@@ -1,6 +1,7 @@
 package moe.chesnot.noodles;
 
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 import org.lwjglb.engine.IGameItem;
 import org.lwjglb.engine.graph.Mesh;
 import org.lwjglb.engine.graph.Renderable;
@@ -28,7 +29,14 @@ public class Noodle implements IGameItem {
     public Noodle(NoodleCurveFactory<?> noodleCurveFactory, Texture texture, int numSides, float thickness){
         this(new Vector3f[] {
                 new Vector3f(0, 0,0),
-                new Vector3f(0, 0, 10f)
+                new Vector3f(0, 1f, 1f),
+                new Vector3f(0, 1f, 2f),
+                new Vector3f(0, 1f, 3f),
+                new Vector3f(0, 0, 4f),
+                new Vector3f(0, 1f, 5f),
+                new Vector3f(0, 0, 6f),
+                new Vector3f(0, 1f, 7f),
+                new Vector3f(0, 0, 8f)
         }, noodleCurveFactory, texture, numSides, thickness);
     }
 
@@ -39,13 +47,13 @@ public class Noodle implements IGameItem {
         this.crossSections = new LinkedList<NoodleCrossSection>();
         NUM_SIDES = numSides;
         THICKNESS = thickness;
-        for(int i = 0; i < points.length / noodleCurveFactory.getFitCount(); i++){
+        for(int i = 0; i < points.length - noodleCurveFactory.getFitCount(); i+=noodleCurveFactory.getFitIncrement()){
             // i is the curve number
             // a noodle is subdivided into many smaller curves depending on the curve factory
             this.points.add(new NoodlePhysicsPoint(points[i]));
             ArrayList<Vector3f> curvePoints = new ArrayList<>();
             for(int j = 0; j < noodleCurveFactory.getFitCount(); j++){
-                curvePoints.add(points[(i* noodleCurveFactory.getFitCount()) + j]);
+                curvePoints.add(points[i + j]);
             }
             NoodleCurve curve = noodleCurveFactory.fit(curvePoints);
             this.curves.add(curve);
@@ -55,8 +63,8 @@ public class Noodle implements IGameItem {
             float t = 0;
             float step = 0.1f;
             while(t <= 1.0f){
-                Vector3f position = curve.getPosition(t);
-                Vector3f normal = curve.getTangent(t);
+                Vector3fc position = curve.getPosition(t);
+                Vector3fc normal = curve.getTangent(t);
                 NoodleCrossSection cs = new PolygonCrossSection(position, THICKNESS, normal, NUM_SIDES, texture);
                 this.crossSections.add(cs);
                 cs.allocate();
@@ -71,10 +79,10 @@ public class Noodle implements IGameItem {
         int _vertexCount = 0;
         while(csi.hasNext()){
             NoodleCrossSection next = csi.next();
-            for (Vector3f point : next.getPoints()) {
-                sweptSurfaceVertexPositions[(_vertexCount * 3) + 0] = point.x;
-                sweptSurfaceVertexPositions[(_vertexCount * 3) + 1] = point.y;
-                sweptSurfaceVertexPositions[(_vertexCount * 3) + 2] = point.z;
+            for (Vector3fc point : next.getPoints()) {
+                sweptSurfaceVertexPositions[(_vertexCount * 3) + 0] = point.x();
+                sweptSurfaceVertexPositions[(_vertexCount * 3) + 1] = point.y();
+                sweptSurfaceVertexPositions[(_vertexCount * 3) + 2] = point.z();
                 _vertexCount++;
             }
         }
@@ -104,10 +112,13 @@ public class Noodle implements IGameItem {
         }
         float[] textCoords = new float[sweptSurfaceVertexCount * 2];
         // TODO: texture mapping
-//        for (int i = 0; i < (sweptSurfaceVertexCount / NUM_SIDES) - 1; i++) {
-//            textCoords[(i*NUM_SIDES)*2] = 0;
-//            textCoords[(i*NUM_SIDES)*2] = 0;
-//        }
+        for (int i = 0; i < (sweptSurfaceVertexCount); i++) {
+            int cs = i / NUM_SIDES;
+            float u = ((float) cs) / crossSections.size();
+            float v = ((float) i % NUM_SIDES) / NUM_SIDES;
+            textCoords[i*2] = u;
+            textCoords[(i*2)+1] = v;
+        }
         sweptSurfaceMesh = new Mesh(sweptSurfaceVertexPositions, textCoords, sweptSurfaceVertexIndices, texture);
         sweptSurfaceMesh.allocate();
     }
@@ -149,7 +160,13 @@ public class Noodle implements IGameItem {
     @Override
     public Iterable<Renderable> getRenderables() {
         LinkedList<Renderable> l = new LinkedList<Renderable>(this.crossSections);
-        l.add(this.sweptSurfaceMesh);
+        if(sweptSurfaceVisible) {
+            l.add(this.sweptSurfaceMesh);
+        }
         return l;
+    }
+    private boolean sweptSurfaceVisible = true;
+    public void toggleSweptSurfaceVisible(){
+        sweptSurfaceVisible = !sweptSurfaceVisible;
     }
 }
