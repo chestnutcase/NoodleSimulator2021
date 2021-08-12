@@ -18,12 +18,14 @@ public class Noodle implements IGameItem, TickableEntity {
     private final List<NoodleCurve> curves;
     private final List<NoodleCrossSection> crossSections;
     private Mesh sweptSurfaceMesh;
-    private final Texture texture;
+    private final Texture[] textures;
+    private int textureNumber;
 
     // noodle modelling parameters
-    private final int NUM_SIDES;
+    private int NUM_SIDES;
     private final float THICKNESS;
     private final float POINT_MASS = 0.1f;
+    private int crossSectionShape = 0;
 
     // gameitem components
     private Vector3f position = new Vector3f();
@@ -34,7 +36,7 @@ public class Noodle implements IGameItem, TickableEntity {
     private final List<PointMass> pointMasses;
     private final List<DampedSpringForceComponent> springs;
 
-    public Noodle(NoodleCurveFactory<?> noodleCurveFactory, Texture texture, int numSides, float thickness) {
+    public Noodle(NoodleCurveFactory<?> noodleCurveFactory, int numSides, float thickness) throws Exception{
         this(new Vector3f[]{
                 new Vector3f(0, 0, 0),
                 new Vector3f(0, 1f, 1f),
@@ -45,20 +47,26 @@ public class Noodle implements IGameItem, TickableEntity {
                 new Vector3f(0, 0, 6f),
                 new Vector3f(0, 1f, 7f),
                 new Vector3f(0, 0, 8f)
-        }, noodleCurveFactory, texture, numSides, thickness);
+        }, noodleCurveFactory, numSides, thickness);
     }
 
-    public Noodle(Vector3fc[] points, NoodleCurveFactory<?> noodleCurveFactory, Texture texture, int numSides, float thickness) {
+    public Noodle(Vector3fc[] points, NoodleCurveFactory<?> noodleCurveFactory, int numSides, float thickness) throws Exception{
         this.noodleCurveFactory = noodleCurveFactory;
         this.pointMasses = new LinkedList<PointMass>();
         this.curves = new LinkedList<NoodleCurve>();
         this.crossSections = new LinkedList<NoodleCrossSection>();
-        this.texture = texture;
         NUM_SIDES = numSides;
         THICKNESS = thickness;
-
-
-        constructMesh(points);
+        textures = new Texture[]{
+                new Texture("textures/1.png"),
+                new Texture("textures/2.png"),
+                new Texture("textures/3.png"),
+                new Texture("textures/4.png"),
+                new Texture("textures/5.png"),
+                new Texture("textures/6.png"),
+        };
+        textureNumber = 0;
+        constructMesh(points, textures[textureNumber]);
 
         // init physics
         for(int i = 0; i < points.length; i++){
@@ -75,7 +83,7 @@ public class Noodle implements IGameItem, TickableEntity {
         }
     }
 
-    private void constructMesh(Vector3fc[] points) {
+    private void constructMesh(Vector3fc[] points, Texture texture) {
         // cleanup operations
         for(Renderable r : getRenderables()){
             r.cleanUp();
@@ -99,7 +107,7 @@ public class Noodle implements IGameItem, TickableEntity {
             while (t <= 1.0f) {
                 Vector3fc position = curve.getPosition(t);
                 Vector3fc normal = curve.getTangent(t);
-                NoodleCrossSection cs = new PolygonCrossSection(position, THICKNESS, normal, NUM_SIDES, texture, 1);
+                NoodleCrossSection cs = new PolygonCrossSection(position, THICKNESS, normal, NUM_SIDES, texture, crossSectionShape);
                 this.crossSections.add(cs);
                 cs.allocate();
                 sweptSurfaceVertexCount += cs.getPoints().size();
@@ -216,6 +224,21 @@ public class Noodle implements IGameItem, TickableEntity {
             points[i] = pm.getPosition();
             i+=1;
         }
-        constructMesh(points);
+        constructMesh(points, textures[textureNumber]);
+    }
+
+    public void changeTexture(){
+        textureNumber = (textureNumber + 1 ) % textures.length;
+        tick(0);
+    }
+
+    public void changeCrossSection(){
+        crossSectionShape = (crossSectionShape + 1) % 3;
+        tick(0);
+    }
+
+    public void increaseCrossSectionCount(int increment){
+        NUM_SIDES = Math.max(NUM_SIDES + increment, 3);
+        tick(0);
     }
 }

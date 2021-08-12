@@ -118,9 +118,17 @@ public class PolygonCrossSection implements NoodleCrossSection {
             this.points.add(newPoint);
         }
         this.positions = positions;
-        indices = new int[sides];
-        for (int i = 0; i < sides; i++) {
-            indices[i] = i;
+        indices = new int[sides*3];
+        if(shape != 1) {
+            for (int i = 0; i < sides; i++) {
+                indices[i] = i;
+            }
+        }else{
+            for (int i = 1; i < sides; i+=2) {
+                indices[(i*3)+0] = i;
+                indices[(i*3)+1] = (i+1) % sides;
+                indices[(i*3)+2] = (i+2) % sides;
+            }
         }
         textCoords = new float[sides * 2];
         for (int i = 0; i < sides; i++) {
@@ -205,8 +213,8 @@ public class PolygonCrossSection implements NoodleCrossSection {
 
         // Draw the mesh
         glBindVertexArray(getVaoId());
-
-        glDrawElements(GL_TRIANGLE_FAN, getVertexCount(), GL_UNSIGNED_INT, 0);
+        int drawMode = this.shape == 1 ? GL_TRIANGLES : GL_TRIANGLE_FAN;
+        glDrawElements(drawMode, getVertexCount(), GL_UNSIGNED_INT, 0);
 
         // Restore state
         glBindVertexArray(0);
