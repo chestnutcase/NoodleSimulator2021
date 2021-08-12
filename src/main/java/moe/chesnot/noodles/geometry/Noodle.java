@@ -173,7 +173,7 @@ public class Noodle implements IGameItem, TickableEntity {
             vertexNormals[(i*3)+2] = vertexNormal.z;
         }
         sweptSurfaceMesh = new Mesh(sweptSurfaceVertexPositions, textCoords, vertexNormals, sweptSurfaceVertexIndices);
-        sweptSurfaceMesh.allocate();
+//        sweptSurfaceMesh.allocate();
     }
 
     @Override

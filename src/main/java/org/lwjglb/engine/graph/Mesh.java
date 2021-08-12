@@ -1,11 +1,13 @@
 package org.lwjglb.engine.graph;
 
 import org.lwjgl.system.MemoryUtil;
+import org.lwjglb.engine.GameItem;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
@@ -29,46 +31,18 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glDeleteVertexArrays;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
-public class Mesh implements Renderable {
+public class Mesh implements Renderable{
 
-    private final float[] positions;
-    private final float[] textCoords;
-    private final float[] normals;
-    private final int[] indices;
-    private int vaoId;
+    private final int vaoId;
 
-    private List<Integer> vboIdList;
+    private final List<Integer> vboIdList;
 
-    private int vertexCount;
+    private final int vertexCount;
 
     private Material material;
 
     public Mesh(float[] positions, float[] textCoords, float[] normals, int[] indices) {
-        this.positions = positions;
-        this.textCoords = textCoords;
-        this.normals = normals;
-        this.indices = indices;
-    }
-
-    public Material getMaterial() {
-        return material;
-    }
-
-    public void setMaterial(Material material) {
-        this.material = material;
-    }
-
-    public int getVaoId() {
-        return vaoId;
-    }
-
-    public int getVertexCount() {
-        return vertexCount;
-    }
-
-    @Override
-    public void allocate() {
- FloatBuffer posBuffer = null;
+        FloatBuffer posBuffer = null;
         FloatBuffer textCoordsBuffer = null;
         FloatBuffer vecNormalsBuffer = null;
         IntBuffer indicesBuffer = null;
@@ -103,7 +77,12 @@ public class Mesh implements Renderable {
             vboId = glGenBuffers();
             vboIdList.add(vboId);
             vecNormalsBuffer = MemoryUtil.memAllocFloat(normals.length);
-            vecNormalsBuffer.put(normals).flip();
+            if (vecNormalsBuffer.capacity() > 0) {
+                vecNormalsBuffer.put(normals).flip();
+            } else {
+                // Create empty structure
+                vecNormalsBuffer = MemoryUtil.memAllocFloat(positions.length);
+            }
             glBindBuffer(GL_ARRAY_BUFFER, vboId);
             glBufferData(GL_ARRAY_BUFFER, vecNormalsBuffer, GL_STATIC_DRAW);
             glEnableVertexAttribArray(2);
@@ -135,7 +114,23 @@ public class Mesh implements Renderable {
         }
     }
 
-    public void render() {
+    public Material getMaterial() {
+        return material;
+    }
+
+    public void setMaterial(Material material) {
+        this.material = material;
+    }
+
+    public int getVaoId() {
+        return vaoId;
+    }
+
+    public int getVertexCount() {
+        return vertexCount;
+    }
+
+    private void initRender() {
         Texture texture = material.getTexture();
         if (texture != null) {
             // Activate firs texture bank
@@ -146,12 +141,39 @@ public class Mesh implements Renderable {
 
         // Draw the mesh
         glBindVertexArray(getVaoId());
+    }
+
+    private void endRender() {
+        // Restore state
+        glBindVertexArray(0);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    @Override
+    public void allocate() {
+
+    }
+
+    public void render() {
+        initRender();
 
         glDrawElements(GL_TRIANGLES, getVertexCount(), GL_UNSIGNED_INT, 0);
 
-        // Restore state
-        glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        endRender();
+    }
+
+    public void renderList(List<GameItem> gameItems, Consumer<GameItem> consumer) {
+        initRender();
+
+        for (GameItem gameItem : gameItems) {
+            // Set up data required by GameItem
+            consumer.accept(gameItem);
+            // Render this game item
+            glDrawElements(GL_TRIANGLES, getVertexCount(), GL_UNSIGNED_INT, 0);
+        }
+
+        endRender();
     }
 
     public void cleanUp() {
@@ -167,6 +189,20 @@ public class Mesh implements Renderable {
         Texture texture = material.getTexture();
         if (texture != null) {
             texture.cleanup();
+        }
+
+        // Delete the VAO
+        glBindVertexArray(0);
+        glDeleteVertexArrays(vaoId);
+    }
+
+    public void deleteBuffers() {
+        glDisableVertexAttribArray(0);
+
+        // Delete the VBOs
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        for (int vboId : vboIdList) {
+            glDeleteBuffers(vboId);
         }
 
         // Delete the VAO

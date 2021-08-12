@@ -1,4 +1,4 @@
-package org.lwjglb.engine;
+package org.lwjglb.engine.items;
 
 import org.joml.Vector3f;
 import org.lwjglb.engine.graph.Mesh;
