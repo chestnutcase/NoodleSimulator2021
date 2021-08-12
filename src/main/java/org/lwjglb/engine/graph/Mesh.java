@@ -31,19 +31,31 @@ import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class Mesh implements Renderable {
 
-    private int vaoId;
-    private List<Integer> vboIdList;
-    private int vertexCount;
     private final float[] positions;
     private final float[] textCoords;
+    private final float[] normals;
     private final int[] indices;
-    private final Texture texture;
+    private int vaoId;
 
-    public Mesh(float[] positions, float[] textCoords, int[] indices, Texture texture) {
+    private List<Integer> vboIdList;
+
+    private int vertexCount;
+
+    private Material material;
+
+    public Mesh(float[] positions, float[] textCoords, float[] normals, int[] indices) {
         this.positions = positions;
         this.textCoords = textCoords;
+        this.normals = normals;
         this.indices = indices;
-        this.texture = texture;
+    }
+
+    public Material getMaterial() {
+        return material;
+    }
+
+    public void setMaterial(Material material) {
+        this.material = material;
     }
 
     public int getVaoId() {
@@ -54,9 +66,11 @@ public class Mesh implements Renderable {
         return vertexCount;
     }
 
+    @Override
     public void allocate() {
-        FloatBuffer posBuffer = null;
+ FloatBuffer posBuffer = null;
         FloatBuffer textCoordsBuffer = null;
+        FloatBuffer vecNormalsBuffer = null;
         IntBuffer indicesBuffer = null;
         try {
             vertexCount = indices.length;
@@ -85,6 +99,16 @@ public class Mesh implements Renderable {
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
 
+            // Vertex normals VBO
+            vboId = glGenBuffers();
+            vboIdList.add(vboId);
+            vecNormalsBuffer = MemoryUtil.memAllocFloat(normals.length);
+            vecNormalsBuffer.put(normals).flip();
+            glBindBuffer(GL_ARRAY_BUFFER, vboId);
+            glBufferData(GL_ARRAY_BUFFER, vecNormalsBuffer, GL_STATIC_DRAW);
+            glEnableVertexAttribArray(2);
+            glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+
             // Index VBO
             vboId = glGenBuffers();
             vboIdList.add(vboId);
@@ -102,6 +126,9 @@ public class Mesh implements Renderable {
             if (textCoordsBuffer != null) {
                 MemoryUtil.memFree(textCoordsBuffer);
             }
+            if (vecNormalsBuffer != null) {
+                MemoryUtil.memFree(vecNormalsBuffer);
+            }
             if (indicesBuffer != null) {
                 MemoryUtil.memFree(indicesBuffer);
             }
@@ -109,10 +136,13 @@ public class Mesh implements Renderable {
     }
 
     public void render() {
-        // Activate firs texture bank
-        glActiveTexture(GL_TEXTURE0);
-        // Bind the texture
-        glBindTexture(GL_TEXTURE_2D, texture.getId());
+        Texture texture = material.getTexture();
+        if (texture != null) {
+            // Activate firs texture bank
+            glActiveTexture(GL_TEXTURE0);
+            // Bind the texture
+            glBindTexture(GL_TEXTURE_2D, texture.getId());
+        }
 
         // Draw the mesh
         glBindVertexArray(getVaoId());
@@ -121,6 +151,7 @@ public class Mesh implements Renderable {
 
         // Restore state
         glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     public void cleanUp() {
@@ -130,6 +161,12 @@ public class Mesh implements Renderable {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         for (int vboId : vboIdList) {
             glDeleteBuffers(vboId);
+        }
+
+        // Delete the texture
+        Texture texture = material.getTexture();
+        if (texture != null) {
+            texture.cleanup();
         }
 
         // Delete the VAO
