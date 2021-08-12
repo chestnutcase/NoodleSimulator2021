@@ -3,10 +3,14 @@ package org.lwjglb.game;
 import moe.chesnot.noodles.*;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+
 import static org.lwjgl.glfw.GLFW.*;
 
 import org.lwjglb.engine.*;
 import org.lwjglb.engine.graph.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class DummyGame implements IGameLogic {
 
@@ -20,11 +24,15 @@ public class DummyGame implements IGameLogic {
 
     private IGameItem[] gameItems;
 
+    private TickableEntity[] tickableEntities;
+
     private static final float CAMERA_POS_STEP = 0.05f;
 
     public DummyGame() {
         renderer = new Renderer();
         camera = new Camera();
+        camera.setPosition(8.544f, 0.5E-1f, 2.52f);
+        camera.setRotation(2, -8.44E+1f, 0.0f);
         cameraInc = new Vector3f();
     }
 
@@ -33,14 +41,15 @@ public class DummyGame implements IGameLogic {
         renderer.init(window);
         Texture texture = new Texture("textures/pasta2.png");
 //        NoodleCurveFactory<?> ncf = new BeizerNoodleCurveFactory(3);
-//        NoodleCurveFactory<?> ncf = new StraightNoodleCurveFactory();
-        NoodleCurveFactory<?> ncf = new QuadraticBeizerNoodleCurveFactory(0.2f);
+        NoodleCurveFactory<?> ncf = new StraightNoodleCurveFactory();
+//        NoodleCurveFactory<?> ncf = new QuadraticBeizerNoodleCurveFactory(0.2f);
         // Create the noodle
         Noodle noodle = new Noodle(ncf, texture, 6, 0.5f);
         Vector3f center = new Vector3f(0.0f, 0.0f, 0.5f);
         Vector3f normal = new Vector3f(0, 1f, 1f);
-        PolygonCrossSection polygon = new PolygonCrossSection(center, 0.25f, normal,5,  texture);
+        PolygonCrossSection polygon = new PolygonCrossSection(center, 0.25f, normal, 5, texture);
         gameItems = new IGameItem[]{noodle};
+        tickableEntities = new TickableEntity[]{noodle};
 //        IGameItem gm = new GameItem(polygon);
 //        gameItems = new IGameItem[]{noodle, gm};
 //        // Create the Mesh
@@ -151,7 +160,8 @@ public class DummyGame implements IGameLogic {
 ////        gameItems = new GameItem[]{gameItem1, gameItem2, gameItem3, gameItem4};
     }
 
-    private boolean debounceS = false;
+    private Map<Integer, Boolean> debounceKey = new HashMap<Integer, Boolean>();
+    private boolean tickEntities = false;
 
     @Override
     public void input(Window window, MouseInput mouseInput) {
@@ -171,15 +181,23 @@ public class DummyGame implements IGameLogic {
         } else if (window.isKeyPressed(GLFW_KEY_SPACE)) {
             cameraInc.y = 1;
         }
-        if (window.isKeyPressed(GLFW_KEY_L) && debounceS){
-            debounceS = false;
-            for(IGameItem gameItem : gameItems){
-                if(gameItem.getClass().equals(Noodle.class)){
+        if (window.isKeyPressed(GLFW_KEY_L) && debounceKey.getOrDefault(GLFW_KEY_S, true)) {
+            debounceKey.put(GLFW_KEY_L, false);
+            for (IGameItem gameItem : gameItems) {
+                if (gameItem.getClass().equals(Noodle.class)) {
                     ((Noodle) gameItem).toggleSweptSurfaceVisible();
                 }
             }
-        }else if(!window.isKeyPressed(GLFW_KEY_L)) {
-            debounceS = true;
+        } else if (!window.isKeyPressed(GLFW_KEY_L)) {
+            debounceKey.put(GLFW_KEY_L, true);
+        }
+        tickEntities = window.isKeyPressed(GLFW_KEY_T);
+        if(window.isKeyPressed(GLFW_KEY_P) && debounceKey.getOrDefault(GLFW_KEY_P, true)){
+            debounceKey.put(GLFW_KEY_P, false);
+            System.out.println("Camera position:" + camera.getPosition());
+            System.out.println("Camera rotation:" + camera.getRotation());
+        }else if(!window.isKeyPressed(GLFW_KEY_P)){
+            debounceKey.put(GLFW_KEY_P, true);
         }
     }
 
@@ -193,6 +211,14 @@ public class DummyGame implements IGameLogic {
             Vector2f rotVec = mouseInput.getDisplVec();
             camera.moveRotation(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0);
         }
+
+        // tick entitiesm
+        if(tickEntities){
+            for (TickableEntity entity : tickableEntities) {
+                entity.tick(interval);
+            }
+            tickEntities = false;
+        }
     }
 
     @Override
@@ -204,7 +230,7 @@ public class DummyGame implements IGameLogic {
     public void cleanup() {
         renderer.cleanup();
         for (IGameItem gameItem : gameItems) {
-            for(Renderable renderable : gameItem.getRenderables()){
+            for (Renderable renderable : gameItem.getRenderables()) {
                 renderable.cleanUp();
             }
         }

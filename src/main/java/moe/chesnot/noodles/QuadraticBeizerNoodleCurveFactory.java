@@ -1,6 +1,7 @@
 package moe.chesnot.noodles;
 
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 import org.lwjgl.system.CallbackI;
 
 import java.util.List;
@@ -15,7 +16,7 @@ public class QuadraticBeizerNoodleCurveFactory implements NoodleCurveFactory<Qua
 
 
     @Override
-    public QuadraticBeizerNoodleCurve fit(List<Vector3f> points) {
+    public QuadraticBeizerNoodleCurve fit(List<Vector3fc> points) {
         assert points.size() == 2;
         Vector3f normal = new Vector3f();
         points.get(0).sub(points.get(1), normal);

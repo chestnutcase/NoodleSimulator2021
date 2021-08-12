@@ -2,6 +2,7 @@ package moe.chesnot.noodles;
 
 import org.joml.Vector3f;
 import org.joml.Intersectiond;
+import org.joml.Vector3fc;
 
 import java.util.List;
 
@@ -13,8 +14,8 @@ public class BeizerNoodleCurveFactory implements NoodleCurveFactory<BeizerNoodle
     }
 
     @Override
-    public BeizerNoodleCurve fit(List<Vector3f> points) {
-        Vector3f[] _points = new Vector3f[degree];
+    public BeizerNoodleCurve fit(List<Vector3fc> points) {
+        Vector3fc[] _points = new Vector3f[degree];
         for(int i = 0; i < degree; i++){
             _points[degree - i - 1] = points.get(i);
         }

@@ -10,7 +10,7 @@ public class StraightNoodleCurve implements NoodleCurve {
     private final Vector3f diff = new Vector3f();
     private final Vector3f start = new Vector3f();
 
-    public StraightNoodleCurve(Vector3f a, Vector3f b){
+    public StraightNoodleCurve(Vector3fc a, Vector3fc b){
         b.sub(a, diff);
         a.div(1, start);
     }

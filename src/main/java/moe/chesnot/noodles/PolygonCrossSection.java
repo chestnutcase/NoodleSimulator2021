@@ -35,15 +35,26 @@ public class PolygonCrossSection implements NoodleCrossSection {
     private final float radius;
     private final int sides;
     private final ArrayList<Vector3f> points;
-
+    private int shape;
     public PolygonCrossSection(Vector3fc center, float radius, Vector3fc normal, int sides, Texture texture) {
+    	// shape parameter is blank
+    	this(center, radius, normal, sides, texture, 0);
+    }
+
+    public PolygonCrossSection(Vector3fc center, float radius, Vector3fc normal, int sides, Texture texture, int shape) {
+    	// 0 -> regular polygon
+    	// 1 -> star
+    	// 2 -> notch
         this.normal = normal;
         this.center = center;
         this.radius = radius;
         this.sides = sides;
         this.points = new ArrayList<Vector3f>();
+        this.shape = shape;
+
         // ax + by + cz = 0
         Vector3f radiusVector;
+        Vector3f radiusVector_short = new Vector3f();
         if (normal.z() != 0) {
             // set a and b = 1
             // c = (-x - y) / z
@@ -60,11 +71,45 @@ public class PolygonCrossSection implements NoodleCrossSection {
             float a = (-normal.y() - normal.z()) / normal.x();
             radiusVector = new Vector3f(a, 1, 1).normalize(radius);
         }
+        radiusVector.normalize(radius * 0.5f, radiusVector_short);
+
+
         Vector3f currentRadiusVector = new Vector3f();
+
+        if (shape == 1) {
+        	// star
+        	sides *= 2;
+        } else if (shape == 2) {
+        	// notch
+        	sides *= 4;
+        } else {
+        	// regular polygon
+        }
+
+
         float[] positions = new float[sides * 3];
         for (int i = 0; i < sides; i++) {
             float angle = (float) (2 * PI / sides * i);
-            radiusVector.rotateAxis(angle, normal.x(), normal.y(), normal.z(), currentRadiusVector);
+
+            if (shape == 1) {
+            	// star
+	            if (i%2 == 0) {
+	            	radiusVector.rotateAxis(angle, normal.x(), normal.y(), normal.z(), currentRadiusVector);
+	            } else {
+	            	radiusVector_short.rotateAxis(angle, normal.x(), normal.y(), normal.z(), currentRadiusVector);
+	            }
+
+            } else if (shape == 2) {
+            	// notch
+                if (i%4 == 0) {
+                	radiusVector_short.rotateAxis(angle, normal.x(), normal.y(), normal.z(), currentRadiusVector);
+                } else {
+                	radiusVector.rotateAxis(angle, normal.x(), normal.y(), normal.z(), currentRadiusVector);
+                }
+            } else {
+            	// regular polygon
+                radiusVector.rotateAxis(angle, normal.x(), normal.y(), normal.z(), currentRadiusVector);
+            }
             Vector3f newPoint = new Vector3f();
             center.add(currentRadiusVector, newPoint);
             positions[(i * 3)] = newPoint.x;
@@ -80,8 +125,8 @@ public class PolygonCrossSection implements NoodleCrossSection {
         textCoords = new float[sides * 2];
         for (int i = 0; i < sides; i++) {
             float angle = (float) (2 * PI / sides * i);
-            textCoords[(i * 2)] = (float) ((0.5) + 0.5*Math.sin(angle));
-            textCoords[(i * 2) + 1] = (float) (0.5 + 0.5*Math.cos(angle));
+            textCoords[(i * 2)] = (float) ((0.5) + 0.5 * Math.sin(angle));
+            textCoords[(i * 2) + 1] = (float) (0.5 + 0.5 * Math.cos(angle));
         }
         this.texture = texture;
         allocate();
@@ -175,9 +220,6 @@ public class PolygonCrossSection implements NoodleCrossSection {
         for (int vboId : vboIdList) {
             glDeleteBuffers(vboId);
         }
-
-        // Delete the texture
-        texture.cleanup();
 
         // Delete the VAO
         glBindVertexArray(0);

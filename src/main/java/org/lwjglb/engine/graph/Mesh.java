@@ -132,9 +132,6 @@ public class Mesh implements Renderable {
             glDeleteBuffers(vboId);
         }
 
-        // Delete the texture
-        texture.cleanup();
-
         // Delete the VAO
         glBindVertexArray(0);
         glDeleteVertexArrays(vaoId);

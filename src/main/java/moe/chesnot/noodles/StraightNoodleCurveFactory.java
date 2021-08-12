@@ -1,12 +1,13 @@
 package moe.chesnot.noodles;
 
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import java.util.List;
 
 public class StraightNoodleCurveFactory implements NoodleCurveFactory<StraightNoodleCurve> {
     @Override
-    public StraightNoodleCurve fit(List<Vector3f> points) {
+    public StraightNoodleCurve fit(List<Vector3fc> points) {
         return new StraightNoodleCurve(points.get(0), points.get(1));
     }
 
