@@ -1,4 +1,5 @@
 screenshots/*.png
+textures/*
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/

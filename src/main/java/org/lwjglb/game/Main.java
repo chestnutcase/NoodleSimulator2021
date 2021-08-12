@@ -3,7 +3,11 @@ package org.lwjglb.game;
 import org.lwjglb.engine.GameEngine;
 import org.lwjglb.engine.IGameLogic;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class Main {
  
@@ -12,9 +16,12 @@ public class Main {
             // Extract textures
             File texturesFolder = new File("textures");
             if(!texturesFolder.exists()){
-                System.err.println("Folder named textures not found! Please extract texture files in a folder named textures in the working directory first.");
-                System.exit(-1);
-                return;
+                texturesFolder.mkdir();
+            }
+            String[] textureFiles = {"1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "skybox.png"};
+            for(String texture : textureFiles){
+                byte[] data = Main.class.getResourceAsStream("/textures/" + texture).readAllBytes();
+                Files.write(Path.of("textures/" + texture), data);
             }
             boolean vSync = true;
             IGameLogic gameLogic = new DummyGame();
