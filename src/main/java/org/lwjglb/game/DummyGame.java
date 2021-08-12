@@ -308,6 +308,16 @@ right: step physics
         AffineTransformOp opRotated = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
         BufferedImage imageOut = opRotated.filter(imageIn, null);
         SimpleDateFormat df = new SimpleDateFormat("yyMMddHHmmss");
+        File folder = new File("screenshots");
+        if(!folder.exists()){
+            boolean mkdir = folder.mkdir();
+            if(!mkdir){
+                System.err.println("Couldn't create screenshots folder!");
+                return;
+            }
+        }else if(folder.isFile()){
+            System.err.println("The screenshots folder is actually a file! Please get rid of it");
+        }
         File file = new File("screenshots/" + df.format(new Date()) + ".png");
         try {//Try to screate image, else show exception.
             ImageIO.write(imageOut, "png", file);
