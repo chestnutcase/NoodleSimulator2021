@@ -74,12 +74,24 @@ public class Noodle implements IGameItem, TickableEntity {
             this.pointMasses.add(new PointMass(points[i], POINT_MASS));
         }
         springs = new ArrayList<>();
+        // main springs
         for (int i = 1; i < this.pointMasses.size(); i++) {
             var spring = new DampedSpringForceComponent(0.001f,  this.pointMasses.get(i - 1));
             this.pointMasses.get(i).addForceComponent(spring);
             this.springs.add(spring);
+            // need this for newton's third law
             var spring2 = new DampedSpringForceComponent(0.001f,  this.pointMasses.get(i));
             this.pointMasses.get(i-1).addForceComponent(spring2);
+            this.springs.add(spring2);
+        }
+        // support springs
+        for(int i = 2; i < this.pointMasses.size() - 2; i++){
+            var spring = new DampedSpringForceComponent(0.001f, this.pointMasses.get(i - 2));
+            this.pointMasses.get(i).addForceComponent(spring);
+            this.springs.add(spring);
+            // need this for newton's third law
+            var spring2 = new DampedSpringForceComponent(0.001f, this.pointMasses.get(i));
+            this.pointMasses.get(i - 2).addForceComponent(spring2);
             this.springs.add(spring2);
         }
     }
