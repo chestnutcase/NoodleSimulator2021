@@ -17,6 +17,8 @@ This project is started off from [Chapter 13](https://lwjglgamedev.gitbooks.io/3
 
 # How to run
 
+**Requires Java 15 and above**
+
 Download the uber jar (platform specific) from the releases page, and run from the terminal with `java -jar path-to-jar.jar`
 
 To build this project from source, clone the project and setup as a maven project (or just use IntelliJ).
