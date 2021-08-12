@@ -9,7 +9,7 @@ public class Main {
         try {
             boolean vSync = true;
             IGameLogic gameLogic = new DummyGame();
-            GameEngine gameEng = new GameEngine("NOODLES", 800, 600, vSync, gameLogic);
+            GameEngine gameEng = new GameEngine("Noodle Simulator 2021", 1024, 768, vSync, gameLogic);
             gameEng.run();
         } catch (Exception excp) {
             excp.printStackTrace();

@@ -1,24 +1,31 @@
 package org.lwjglb.game;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.lwjglb.engine.graph.Renderer;
+
+import moe.chesnot.noodles.geometry.Noodle;
+import moe.chesnot.noodles.geometry.NoodleCurveFactory;
+import moe.chesnot.noodles.geometry.StraightNoodleCurveFactory;
+import org.lwjglb.engine.*;
+import org.lwjglb.engine.graph.*;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+
 import static org.lwjgl.glfw.GLFW.*;
-import org.lwjglb.engine.GameItem;
-import org.lwjglb.engine.IGameLogic;
-import org.lwjglb.engine.MouseInput;
-import org.lwjglb.engine.Scene;
-import org.lwjglb.engine.SceneLight;
-import org.lwjglb.engine.SkyBox;
-import org.lwjglb.engine.Window;
-import org.lwjglb.engine.graph.Camera;
-import org.lwjglb.engine.graph.DirectionalLight;
-import org.lwjglb.engine.graph.Material;
-import org.lwjglb.engine.graph.Mesh;
-import org.lwjglb.engine.graph.OBJLoader;
-import org.lwjglb.engine.graph.Texture;
+import static org.lwjgl.opengl.GL11.*;
+
+
+import javax.imageio.ImageIO;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DummyGame implements IGameLogic {
 
@@ -38,10 +45,15 @@ public class DummyGame implements IGameLogic {
 
     private static final float CAMERA_POS_STEP = 0.05f;
 
+    private IGameItem[] gameItems;
+    private TickableEntity[] tickableEntities;
+
     public DummyGame() {
         renderer = new Renderer();
         camera = new Camera();
         cameraInc = new Vector3f(0.0f, 0.0f, 0.0f);
+        camera.setPosition(-2.531f, 1.1f, 8.177f);
+        camera.setRotation(8.400f, 42.06f, 0.0f);
         lightAngle = -90;
     }
 
@@ -50,72 +62,48 @@ public class DummyGame implements IGameLogic {
         renderer.init(window);
 
         scene = new Scene();
-        
-        // Setup  GameItems
-        float reflectance = 1f;
-        Mesh mesh = OBJLoader.loadMesh("/models/cube.obj");
-        Texture texture = new Texture("textures/grassblock.png");
-        Material material = new Material(texture, reflectance);
-        mesh.setMaterial(material);
-        
-        float blockScale = 0.5f;        
+
         float skyBoxScale = 50.0f;
-        float extension = 2.0f;
-        
-        float startx = extension * (-skyBoxScale + blockScale);
-        float startz = extension * (skyBoxScale - blockScale);
-        float starty = -1.0f;
-        float inc = blockScale * 2;
-        
-        float posx = startx;
-        float posz = startz;
-        float incy = 0.0f;
-        int NUM_ROWS = (int)(extension * skyBoxScale * 2 / inc);
-        int NUM_COLS = (int)(extension * skyBoxScale * 2/ inc);
-        GameItem[] gameItems  = new GameItem[NUM_ROWS * NUM_COLS];
-        for(int i=0; i<NUM_ROWS; i++) {
-            for(int j=0; j<NUM_COLS; j++) {
-                GameItem gameItem = new GameItem(mesh);
-                gameItem.setScale(blockScale);
-                incy = Math.random() > 0.9f ? blockScale * 2 : 0f;
-                gameItem.setPosition(posx, starty + incy, posz);
-                gameItems[i*NUM_COLS + j] = gameItem;
-                
-                posx += inc;
-            }
-            posx = startx;
-            posz -= inc;
-        }
+        NoodleCurveFactory<?> ncf = new StraightNoodleCurveFactory();
+        Noodle noodle = new Noodle(ncf, 6, 0.5f);
+        IGameItem[] gameItems = {noodle};
+        this.gameItems = gameItems;
+        this.tickableEntities = new TickableEntity[]{noodle};
         scene.setGameItems(gameItems);
 
         // Setup  SkyBox
         SkyBox skyBox = new SkyBox("/models/skybox.obj", "textures/skybox.png");
         skyBox.setScale(skyBoxScale);
         scene.setSkyBox(skyBox);
-        
+
         // Setup Lights
         setupLights();
-        
+
         // Create HUD
-        hud = new Hud("DEMO");
-        
-        camera.getPosition().x = 0.65f;
-        camera.getPosition().y = 1.15f;
-        camera.getPosition().y = 4.34f;
+        hud = new Hud("NOODLESIM 2021 - PRESS H TO SHOW HELP IN CONSOLE");
     }
-    
+
     private void setupLights() {
         SceneLight sceneLight = new SceneLight();
         scene.setSceneLight(sceneLight);
 
         // Ambient Light
-        sceneLight.setAmbientLight(new Vector3f(1.0f, 1.0f, 1.0f));
-
+        sceneLight.setAmbientLight(new Vector3f(0.5f, 0.5f, 0.5f));
+        var pointLight = new PointLight(new Vector3f(1f, 1f, 1f), new Vector3f(0, 0, 0), 100.0f);
+        PointLight.Attenuation att = new PointLight.Attenuation(0.1f, 0.1f, 1.0f);
+        pointLight.setAttenuation(att);
+        SpotLight[] spotlights = {
+                new SpotLight(pointLight, new Vector3f(0, 0, 1), 25f)
+        };
+        sceneLight.setSpotLightList(spotlights);
         // Directional Light
         float lightIntensity = 1.0f;
         Vector3f lightPosition = new Vector3f(-1, 0, 0);
         sceneLight.setDirectionalLight(new DirectionalLight(new Vector3f(1, 1, 1), lightPosition, lightIntensity));
     }
+
+    private final Map<Integer, Boolean> debounceKey = new HashMap<Integer, Boolean>();
+    private boolean tickEntities = false;
 
     @Override
     public void input(Window window, MouseInput mouseInput) {
@@ -130,10 +118,89 @@ public class DummyGame implements IGameLogic {
         } else if (window.isKeyPressed(GLFW_KEY_D)) {
             cameraInc.x = 1;
         }
-        if (window.isKeyPressed(GLFW_KEY_Z)) {
+        if (window.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) {
             cameraInc.y = -1;
-        } else if (window.isKeyPressed(GLFW_KEY_X)) {
+        } else if (window.isKeyPressed(GLFW_KEY_SPACE)) {
             cameraInc.y = 1;
+        }
+        if (window.isKeyPressed(GLFW_KEY_L) && debounceKey.getOrDefault(GLFW_KEY_L, true)) {
+            debounceKey.put(GLFW_KEY_L, false);
+            for (IGameItem gameItem : gameItems) {
+                if (gameItem.getClass().equals(Noodle.class)) {
+                    ((Noodle) gameItem).toggleSweptSurfaceVisible();
+                }
+            }
+        } else if (!window.isKeyPressed(GLFW_KEY_L)) {
+            debounceKey.put(GLFW_KEY_L, true);
+        }
+        tickEntities = window.isKeyPressed(GLFW_KEY_RIGHT);
+        if (window.isKeyPressed(GLFW_KEY_P) && debounceKey.getOrDefault(GLFW_KEY_P, true)) {
+            debounceKey.put(GLFW_KEY_P, false);
+            System.out.println("Camera position:" + camera.getPosition());
+            System.out.println("Camera rotation:" + camera.getRotation());
+        } else if (!window.isKeyPressed(GLFW_KEY_P)) {
+            debounceKey.put(GLFW_KEY_P, true);
+        }
+        if (window.isKeyPressed(GLFW_KEY_R) && debounceKey.getOrDefault(GLFW_KEY_R, true)) {
+            debounceKey.put(GLFW_KEY_R, false);
+            screenshot(window);
+        } else if (!window.isKeyPressed(GLFW_KEY_R)) {
+            debounceKey.put(GLFW_KEY_R, true);
+        }
+        if (window.isKeyPressed(GLFW_KEY_T) && debounceKey.getOrDefault(GLFW_KEY_T, true)) {
+            debounceKey.put(GLFW_KEY_T, false);
+            for (IGameItem gameItem : gameItems) {
+                if (gameItem.getClass().equals(Noodle.class)) {
+                    ((Noodle) gameItem).changeTexture();
+                }
+            }
+        } else if (!window.isKeyPressed(GLFW_KEY_T)) {
+            debounceKey.put(GLFW_KEY_T, true);
+        }
+        if (window.isKeyPressed(GLFW_KEY_UP) && debounceKey.getOrDefault(GLFW_KEY_UP, true)) {
+            debounceKey.put(GLFW_KEY_UP, false);
+            for (IGameItem gameItem : gameItems) {
+                if (gameItem.getClass().equals(Noodle.class)) {
+                    ((Noodle) gameItem).increaseCrossSectionCount(1);
+                }
+            }
+        } else if (!window.isKeyPressed(GLFW_KEY_UP)) {
+            debounceKey.put(GLFW_KEY_UP, true);
+        }
+        if (window.isKeyPressed(GLFW_KEY_DOWN) && debounceKey.getOrDefault(GLFW_KEY_DOWN, true)) {
+            debounceKey.put(GLFW_KEY_DOWN, false);
+            for (IGameItem gameItem : gameItems) {
+                if (gameItem.getClass().equals(Noodle.class)) {
+                    ((Noodle) gameItem).increaseCrossSectionCount(-1);
+                }
+            }
+        } else if (!window.isKeyPressed(GLFW_KEY_DOWN)) {
+            debounceKey.put(GLFW_KEY_DOWN, true);
+        }
+        if (window.isKeyPressed(GLFW_KEY_C) && debounceKey.getOrDefault(GLFW_KEY_C, true)) {
+            debounceKey.put(GLFW_KEY_C, false);
+            for (IGameItem gameItem : gameItems) {
+                if (gameItem.getClass().equals(Noodle.class)) {
+                    ((Noodle) gameItem).changeCrossSection();
+                }
+            }
+        } else if (!window.isKeyPressed(GLFW_KEY_C)) {
+            debounceKey.put(GLFW_KEY_C, true);
+        }
+        if (window.isKeyPressed(GLFW_KEY_H) && debounceKey.getOrDefault(GLFW_KEY_H, true)) {
+            debounceKey.put(GLFW_KEY_H, false);
+            System.out.println("""
+wasd shift space: camera movement
+r: take screenshot
+t: change texture
+c: change cross section shape
+l: toggle swept surface visibility
+p: print camera position
+up/down: increment/decrement cross section sides
+right: step physics
+""");
+        } else if (!window.isKeyPressed(GLFW_KEY_H)) {
+            debounceKey.put(GLFW_KEY_H, true);
         }
     }
 
@@ -143,7 +210,7 @@ public class DummyGame implements IGameLogic {
         if (mouseInput.isRightButtonPressed()) {
             Vector2f rotVec = mouseInput.getDisplVec();
             camera.moveRotation(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0);
-            
+
             // Update HUD compass
             hud.rotateCompass(camera.getRotation().y);
         }
@@ -152,8 +219,20 @@ public class DummyGame implements IGameLogic {
         camera.movePosition(cameraInc.x * CAMERA_POS_STEP, cameraInc.y * CAMERA_POS_STEP, cameraInc.z * CAMERA_POS_STEP);
 
         SceneLight sceneLight = scene.getSceneLight();
+        Vector3f coneDirection = new Vector3f();
+        camera.getRotation().normalize(coneDirection);
+        sceneLight.getSpotLightList()[0].setConeDirection(coneDirection);
+        sceneLight.getSpotLightList()[0].getPointLight().setPosition(camera.getPosition());
 
+        // tick entities
+        if (tickEntities) {
+            for (TickableEntity entity : tickableEntities) {
+                entity.tick(interval);
+            }
+            tickEntities = false;
+        }
         // Update directional light direction, intensity and colour
+        /*
         DirectionalLight directionalLight = sceneLight.getDirectionalLight();
         lightAngle += 1.1f;
         if (lightAngle > 90) {
@@ -178,6 +257,7 @@ public class DummyGame implements IGameLogic {
         double angRad = Math.toRadians(lightAngle);
         directionalLight.getDirection().x = (float) Math.sin(angRad);
         directionalLight.getDirection().y = (float) Math.cos(angRad);
+        */
     }
 
     @Override
@@ -189,11 +269,51 @@ public class DummyGame implements IGameLogic {
     @Override
     public void cleanup() {
         renderer.cleanup();
-        Map<Mesh, List<GameItem>> mapMeshes = scene.getGameMeshes();
-        for (Mesh mesh : mapMeshes.keySet()) {
+        Map<IMesh, List<IGameItem>> mapMeshes = scene.getGameMeshes();
+        for (IMesh mesh : mapMeshes.keySet()) {
             mesh.cleanUp();
         }
         hud.cleanup();
     }
 
+    private void screenshot(Window window) {
+        int WIDTH = window.getWidth();
+        int HEIGHT = window.getHeight();
+        //Creating an rbg array of total pixels
+        int[] pixels = new int[WIDTH * HEIGHT];
+        int bindex;
+        // allocate space for RBG pixels
+        ByteBuffer fb = ByteBuffer.allocateDirect(WIDTH * HEIGHT * 3);
+
+        // grab a copy of the current frame contents as RGB
+        glReadPixels(0, 0, WIDTH, HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, fb);
+
+        BufferedImage imageIn = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+        // convert RGB data in ByteBuffer to integer array
+        for (int i = 0; i < pixels.length; i++) {
+            bindex = i * 3;
+            pixels[i] =
+                    ((fb.get(bindex) << 16)) +
+                            ((fb.get(bindex + 1) << 8)) +
+                            ((fb.get(bindex + 2) << 0));
+        }
+        //Allocate colored pixel to buffered Image
+        imageIn.setRGB(0, 0, WIDTH, HEIGHT, pixels, 0, WIDTH);
+
+        //Creating the transformation direction (horizontal)
+        AffineTransform at = AffineTransform.getScaleInstance(1, -1);
+        at.translate(0, -imageIn.getHeight(null));
+
+        //Applying transformation
+        AffineTransformOp opRotated = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+        BufferedImage imageOut = opRotated.filter(imageIn, null);
+        SimpleDateFormat df = new SimpleDateFormat("yyMMddHHmmss");
+        File file = new File("screenshots/" + df.format(new Date()) + ".png");
+        try {//Try to screate image, else show exception.
+            ImageIO.write(imageOut, "png", file);
+        } catch (Exception e) {
+            System.err.println("ScreenShot() exception: " + e);
+        }
+        System.out.println("Screenshot saved to " + file.getAbsolutePath());
+    }
 }

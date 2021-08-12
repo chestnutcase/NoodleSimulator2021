@@ -3,12 +3,16 @@ package moe.chesnot.noodles.geometry;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjglb.engine.IGameItem;
+import org.lwjglb.engine.graph.IMesh;
+import org.lwjglb.engine.graph.Material;
 import org.lwjglb.engine.graph.Texture;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static java.lang.Math.PI;
 import static org.lwjgl.opengl.GL11.*;
@@ -18,7 +22,7 @@ import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 
-public class PolygonCrossSection implements NoodleCrossSection {
+public class PolygonCrossSection implements NoodleCrossSection, IMesh {
     private float[] positions;
     private int[] indices;
     private float[] textCoords;
@@ -148,7 +152,6 @@ public class PolygonCrossSection implements NoodleCrossSection {
         return vertexCount;
     }
 
-    @Override
     public void allocate() {
         FloatBuffer posBuffer = null;
         FloatBuffer textCoordsBuffer = null;
@@ -204,6 +207,18 @@ public class PolygonCrossSection implements NoodleCrossSection {
         }
     }
 
+    private Material material;
+
+    @Override
+    public Material getMaterial() {
+        return new Material(texture, 1f);
+    }
+
+    @Override
+    public void setMaterial(Material material) {
+        this.material = material;
+    }
+
     @Override
     public void render() {
         // Activate firs texture bank
@@ -220,6 +235,16 @@ public class PolygonCrossSection implements NoodleCrossSection {
         glBindVertexArray(0);
     }
 
+    @Override
+    public void renderList(List<IGameItem> gameItems, Consumer<IGameItem> consumer) {
+        for (IGameItem gameItem : gameItems) {
+            // Set up data required by GameItem
+            consumer.accept(gameItem);
+            // Render this game item
+            render();
+        }
+    }
+
     public void cleanUp() {
         glDisableVertexAttribArray(0);
 
@@ -232,6 +257,11 @@ public class PolygonCrossSection implements NoodleCrossSection {
         // Delete the VAO
         glBindVertexArray(0);
         glDeleteVertexArrays(vaoId);
+    }
+
+    @Override
+    public void deleteBuffers() {
+
     }
 
     @Override

@@ -1,7 +1,7 @@
 package org.lwjglb.engine.graph;
 
 import org.lwjgl.system.MemoryUtil;
-import org.lwjglb.engine.GameItem;
+import org.lwjglb.engine.IGameItem;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -31,7 +31,7 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glDeleteVertexArrays;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
-public class Mesh implements Renderable{
+public class Mesh implements IMesh {
 
     private final int vaoId;
 
@@ -114,10 +114,12 @@ public class Mesh implements Renderable{
         }
     }
 
+    @Override
     public Material getMaterial() {
         return material;
     }
 
+    @Override
     public void setMaterial(Material material) {
         this.material = material;
     }
@@ -143,18 +145,7 @@ public class Mesh implements Renderable{
         glBindVertexArray(getVaoId());
     }
 
-    private void endRender() {
-        // Restore state
-        glBindVertexArray(0);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
     @Override
-    public void allocate() {
-
-    }
-
     public void render() {
         initRender();
 
@@ -163,10 +154,11 @@ public class Mesh implements Renderable{
         endRender();
     }
 
-    public void renderList(List<GameItem> gameItems, Consumer<GameItem> consumer) {
+    @Override
+    public void renderList(List<IGameItem> gameItems, Consumer<IGameItem> consumer) {
         initRender();
 
-        for (GameItem gameItem : gameItems) {
+        for (IGameItem gameItem : gameItems) {
             // Set up data required by GameItem
             consumer.accept(gameItem);
             // Render this game item
@@ -176,6 +168,7 @@ public class Mesh implements Renderable{
         endRender();
     }
 
+    @Override
     public void cleanUp() {
         glDisableVertexAttribArray(0);
 
@@ -185,17 +178,18 @@ public class Mesh implements Renderable{
             glDeleteBuffers(vboId);
         }
 
-        // Delete the texture
-        Texture texture = material.getTexture();
-        if (texture != null) {
-            texture.cleanup();
-        }
+//        // Delete the texture
+//        Texture texture = material.getTexture();
+//        if (texture != null) {
+//            texture.cleanup();
+//        }
 
         // Delete the VAO
         glBindVertexArray(0);
         glDeleteVertexArrays(vaoId);
     }
 
+    @Override
     public void deleteBuffers() {
         glDisableVertexAttribArray(0);
 

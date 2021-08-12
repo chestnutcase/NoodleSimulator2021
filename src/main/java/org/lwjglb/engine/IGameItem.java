@@ -1,7 +1,7 @@
 package org.lwjglb.engine;
 
 import org.joml.Vector3f;
-import org.lwjglb.engine.graph.Renderable;
+import org.lwjglb.engine.graph.Mesh;
 
 public interface IGameItem {
     Vector3f getPosition();
@@ -16,5 +16,7 @@ public interface IGameItem {
 
     void setRotation(float x, float y, float z);
 
-    Iterable<Renderable> getRenderables();
+    Mesh getMesh();
+
+    void setMesh(Mesh mesh);
 }

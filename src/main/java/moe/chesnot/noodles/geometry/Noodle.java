@@ -4,13 +4,14 @@ import moe.chesnot.noodles.physics.DampedSpringForceComponent;
 import moe.chesnot.noodles.physics.PointMass;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
+import org.lwjglb.engine.GameItem;
 import org.lwjglb.engine.IGameItem;
+import org.lwjglb.engine.Scene;
 import org.lwjglb.engine.TickableEntity;
-import org.lwjglb.engine.graph.Mesh;
-import org.lwjglb.engine.graph.Renderable;
-import org.lwjglb.engine.graph.Texture;
+import org.lwjglb.engine.graph.*;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class Noodle implements IGameItem, TickableEntity {
     // geometry components
@@ -84,9 +85,10 @@ public class Noodle implements IGameItem, TickableEntity {
     }
 
     private void constructMesh(Vector3fc[] points, Texture texture) {
-        // cleanup operations
-        for(Renderable r : getRenderables()){
-            r.cleanUp();
+        if (this.sweptSurfaceMesh != null) this.sweptSurfaceMesh.cleanUp();
+        for(var cs : crossSections){
+            Scene.meshMap.remove(cs);
+            cs.cleanUp();
         }
         this.curves.clear();
         this.crossSections.clear();
@@ -109,7 +111,6 @@ public class Noodle implements IGameItem, TickableEntity {
                 Vector3fc normal = curve.getTangent(t);
                 NoodleCrossSection cs = new PolygonCrossSection(position, THICKNESS, normal, NUM_SIDES, texture, crossSectionShape);
                 this.crossSections.add(cs);
-                cs.allocate();
                 sweptSurfaceVertexCount += cs.getPoints().size();
                 t += step;
             }
@@ -164,7 +165,7 @@ public class Noodle implements IGameItem, TickableEntity {
         }
         float[] vertexNormals = new float[sweptSurfaceVertexCount * 3];
         for (int i = 0; i < (sweptSurfaceVertexCount); i++){
-            int cs_i = i / NUM_SIDES;
+            int cs_i = i / this.crossSections.get(0).getPoints().size();
             NoodleCrossSection cs = this.crossSections.get(cs_i);
             Vector3f vertexNormal = new Vector3f(sweptSurfaceVertexPositions[i*3], sweptSurfaceVertexPositions[(i*3)+1], sweptSurfaceVertexPositions[(i*3)+2]);
             vertexNormal.sub(cs.getCenter()).normalize();
@@ -173,7 +174,14 @@ public class Noodle implements IGameItem, TickableEntity {
             vertexNormals[(i*3)+2] = vertexNormal.z;
         }
         sweptSurfaceMesh = new Mesh(sweptSurfaceVertexPositions, textCoords, vertexNormals, sweptSurfaceVertexIndices);
-//        sweptSurfaceMesh.allocate();
+
+        Material material = new Material(texture, 1f);
+        sweptSurfaceMesh.setMaterial(material);
+        List<IGameItem> old = new ArrayList();
+        old.add(this);
+        for(NoodleCrossSection cs: crossSections){
+            Scene.meshMap.put(cs, old);
+        }
     }
 
     @Override
@@ -211,17 +219,32 @@ public class Noodle implements IGameItem, TickableEntity {
     }
 
     @Override
-    public Iterable<Renderable> getRenderables() {
-        LinkedList<Renderable> l = new LinkedList<Renderable>(this.crossSections);
-        if (sweptSurfaceVisible && this.sweptSurfaceMesh != null) {
-            l.add(this.sweptSurfaceMesh);
-        }
-        return l;
+    public Mesh getMesh() {
+        return this.sweptSurfaceMesh;
     }
+
+    @Override
+    public void setMesh(Mesh mesh) {
+    }
+
+//    public Iterable<Renderable> getRenderables() {
+//        LinkedList<Renderable> l = new LinkedList<Renderable>(this.crossSections);
+//        if (sweptSurfaceVisible && this.sweptSurfaceMesh != null) {
+//            l.add(this.sweptSurfaceMesh);
+//        }
+//        return l;
+//    }
 
     private boolean sweptSurfaceVisible = true;
 
     public void toggleSweptSurfaceVisible() {
+        if(sweptSurfaceVisible) {
+            Scene.meshMap.remove(sweptSurfaceMesh);
+        }else{
+            List<IGameItem> old = new ArrayList<>();
+            old.add(this);
+            Scene.meshMap.put(sweptSurfaceMesh, old);
+        }
         sweptSurfaceVisible = !sweptSurfaceVisible;
     }
 
@@ -234,7 +257,18 @@ public class Noodle implements IGameItem, TickableEntity {
             points[i] = pm.getPosition();
             i+=1;
         }
+            List<IGameItem> old = new ArrayList<>();
+            old.add(this);
+        if(sweptSurfaceVisible) {
+            Scene.meshMap.remove(sweptSurfaceMesh);
+        }
         constructMesh(points, textures[textureNumber]);
+        if(sweptSurfaceVisible){
+            Scene.meshMap.put(sweptSurfaceMesh, old);
+        }
+        for(NoodleCrossSection cs: crossSections){
+            Scene.meshMap.put(cs, old);
+        }
     }
 
     public void changeTexture(){

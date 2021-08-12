@@ -3,6 +3,7 @@ package org.lwjglb.engine.graph;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjglb.engine.GameItem;
+import org.lwjglb.engine.IGameItem;
 
 public class Transformation {
 
@@ -59,7 +60,7 @@ public class Transformation {
         return orthoMatrix;
     }
     
-    public Matrix4f buildModelViewMatrix(GameItem gameItem, Matrix4f viewMatrix) {
+    public Matrix4f buildModelViewMatrix(IGameItem gameItem, Matrix4f viewMatrix) {
         Vector3f rotation = gameItem.getRotation();
         modelMatrix.identity().translate(gameItem.getPosition()).
                 rotateX((float)Math.toRadians(-rotation.x)).
@@ -70,7 +71,7 @@ public class Transformation {
         return modelViewMatrix.mul(modelMatrix);
     }
 
-    public Matrix4f buildOrthoProjModelMatrix(GameItem gameItem, Matrix4f orthoMatrix) {
+    public Matrix4f buildOrthoProjModelMatrix(IGameItem gameItem, Matrix4f orthoMatrix) {
         Vector3f rotation = gameItem.getRotation();
         modelMatrix.identity().translate(gameItem.getPosition()).
                 rotateX((float) Math.toRadians(-rotation.x)).

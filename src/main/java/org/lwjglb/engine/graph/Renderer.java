@@ -6,13 +6,8 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import static org.lwjgl.opengl.GL11.*;
-import org.lwjglb.engine.GameItem;
-import org.lwjglb.engine.IHud;
-import org.lwjglb.engine.Scene;
-import org.lwjglb.engine.SceneLight;
-import org.lwjglb.engine.SkyBox;
-import org.lwjglb.engine.Utils;
-import org.lwjglb.engine.Window;
+
+import org.lwjglb.engine.*;
 
 public class Renderer {
 
@@ -153,10 +148,10 @@ public class Renderer {
 
         sceneShaderProgram.setUniform("texture_sampler", 0);
         // Render each mesh with the associated game Items
-        Map<Mesh, List<GameItem>> mapMeshes = scene.getGameMeshes();
-        for (Mesh mesh : mapMeshes.keySet()) {
+        Map<IMesh, List<IGameItem>> mapMeshes = scene.getGameMeshes();
+        for (IMesh mesh : mapMeshes.keySet()) {
             sceneShaderProgram.setUniform("material", mesh.getMaterial());
-            mesh.renderList(mapMeshes.get(mesh), (GameItem gameItem) -> {
+            mesh.renderList(mapMeshes.get(mesh), (IGameItem gameItem) -> {
                 Matrix4f modelViewMatrix = transformation.buildModelViewMatrix(gameItem, viewMatrix);
                 sceneShaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
             }
