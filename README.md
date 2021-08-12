@@ -34,6 +34,7 @@ C - change cross section shape
 UP/DOWN - increment/decrement number of sides in cross section
 RIGHT - step forward physics simulation
 R - take screenshot
+P - print camera position
 ```
 
 # Code explanation

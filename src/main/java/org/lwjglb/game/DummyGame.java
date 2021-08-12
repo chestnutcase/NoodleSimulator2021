@@ -190,14 +190,15 @@ public class DummyGame implements IGameLogic {
         if (window.isKeyPressed(GLFW_KEY_H) && debounceKey.getOrDefault(GLFW_KEY_H, true)) {
             debounceKey.put(GLFW_KEY_H, false);
             System.out.println("""
-wasd shift space: camera movement
-r: take screenshot
-t: change texture
-c: change cross section shape
-l: toggle swept surface visibility
-p: print camera position
-up/down: increment/decrement cross section sides
-right: step physics
+WASD LSHIFT SPACE - camera movement
+RIGHTMOUSE+DRAG - camera look
+T - change texture
+L - toggle swept surface visibility
+C - change cross section shape
+UP/DOWN - increment/decrement number of sides in cross section
+RIGHT - step forward physics simulation
+R - take screenshot
+P - print camera position
 """);
         } else if (!window.isKeyPressed(GLFW_KEY_H)) {
             debounceKey.put(GLFW_KEY_H, true);
